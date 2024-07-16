@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simple Blogging Platform</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Simple Blogging Platform</h1>
+
+  <div id="posts"></div>
+
+  <h2>Create a New Post</h2>
+  <form id="postForm">
+    <label for="title">Title:</label>
+    <input type="text" id="title" name="title" required>
+    <br>
+    <label for="content">Content:</label>
+    <textarea id="content" name="content" rows="4" required></textarea>
+    <br>
+    <button type="submit">Create Post</button>
+  </form>
+
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+  <script>
+    $(document).ready(() => {
+      // Fetch posts on page load
+      fetchPosts();
+
+      // Handle form submission
+      $('#postForm').submit((event) => {
+        event.preventDefault();
+        const title = $('#title').val();
+        const content = $('#content').val();
+        
+        $.post('http://localhost:4000/api/posts', { title, content }, (data) => {
+          fetchPosts(); // Refresh the posts after creating a new one
+        });
+      });
+
+      // Function to fetch and display posts
+      function fetchPosts() {
+        $.get('http://localhost:4000/api/posts', (data) => {
+          const postsDiv = $('#posts');
+          postsDiv.empty(); // Clear previous posts
+          data.forEach((post) => {
+            const postElement = $('<div>').addClass('post');
+            postElement.append($('<h3>').text(post.title));
+            postElement.append($('<p>').text(post.content));
+            
+            // Edit button
+            const editButton = $('<button>').text('Edit').click(() => {
+              const newTitle = prompt('Enter new title:', post.title);
+              const newContent = prompt('Enter new content:', post.content);
+              if (newTitle !== null && newContent !== null) {
+                editPost(post.id, newTitle, newContent);
+              }
+            });
+            
+            // Delete button
+            const deleteButton = $('<button>').text('Delete').click(() => {
+              deletePost(post.id);
+            });
+
+            postElement.append(editButton);
+            postElement.append(deleteButton);
+            
+            postsDiv.append(postElement);
+          });
+        });
+      }
+
+      // Function to edit a post
+      function editPost(id, newTitle, newContent) {
+        $.ajax({
+          url: `http://localhost:4000/api/posts/${id}`,
+          type: 'PUT',
+          contentType: 'application/json',
+          data: JSON.stringify({ title: newTitle, content: newContent }),
+          success: () => {
+            fetchPosts(); // Refresh the posts after editing
+          },
+        });
+      }
+
+      // Function to delete a post
+      function deletePost(id) {
+        $.ajax({
+          url: `http://localhost:4000/api/posts/${id}`,
+          type: 'DELETE',
+          success: () => {
+            fetchPosts(); // Refresh the posts after deleting
+          },
+        });
+      }
+    });
+  </script>
+</body>
+</html>
